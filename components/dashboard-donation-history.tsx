@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DonationReceiptCard } from "@/components/donation-receipt-card";
 import { FlashBanner } from "@/components/flash-banner";
+import { runBottomSheetEnter } from "@/lib/bottom-sheet";
 
 type PaymentType = "CASH" | "BANK_TRANSFER" | "ABA" | "ACLEDA" | "WING" | "OTHER";
 
@@ -22,6 +23,7 @@ type DashboardDonationHistoryProps = {
   donations: DashboardDonationItem[];
   userName: string;
   userEmail: string;
+  embedded?: boolean;
 };
 
 type SheetState = { mode: "edit"; id: number } | { mode: "delete"; id: number } | null;
@@ -30,6 +32,7 @@ export function DashboardDonationHistory({
   donations,
   userName,
   userEmail,
+  embedded = false,
 }: DashboardDonationHistoryProps) {
   const router = useRouter();
   const [sheet, setSheet] = useState<SheetState>(null);
@@ -50,18 +53,6 @@ export function DashboardDonationHistory({
     sheet !== null ? donations.find((d) => d.id === sheet.id) ?? null : null;
 
   useEffect(() => {
-    if (!sheetOpen) {
-      setSheetEntered(false);
-      return;
-    }
-    setSheetEntered(false);
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setSheetEntered(true));
-    });
-    return () => cancelAnimationFrame(id);
-  }, [sheetOpen, sheet?.mode, sheet?.id]);
-
-  useEffect(() => {
     if (!sheetOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -72,6 +63,7 @@ export function DashboardDonationHistory({
 
   const closeSheet = () => {
     if (busyId !== null) return;
+    setSheetEntered(false);
     setSheet(null);
     setFormError("");
   };
@@ -79,6 +71,7 @@ export function DashboardDonationHistory({
   const startEdit = (d: DashboardDonationItem) => {
     setFormError("");
     setSheet({ mode: "edit", id: d.id });
+    runBottomSheetEnter(setSheetEntered);
     setAmount(String(d.amount));
     setPaymentType(d.paymentType);
     setAccountNumber(d.accountNumber);
@@ -89,6 +82,7 @@ export function DashboardDonationHistory({
   const startDelete = (d: DashboardDonationItem) => {
     setFormError("");
     setSheet({ mode: "delete", id: d.id });
+    runBottomSheetEnter(setSheetEntered);
   };
 
   const handleProofUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,6 +133,7 @@ export function DashboardDonationHistory({
       setFormError(data?.error ?? "Could not update donation.");
       return;
     }
+    setSheetEntered(false);
     setSheet(null);
     router.refresh();
   };
@@ -155,6 +150,7 @@ export function DashboardDonationHistory({
       setFormError(data?.error ?? "Could not delete donation.");
       return;
     }
+    setSheetEntered(false);
     setSheet(null);
     router.refresh();
   };
@@ -162,8 +158,12 @@ export function DashboardDonationHistory({
   const sheetTitleId =
     sheet?.mode === "delete" ? "delete-donation-sheet-title" : "edit-donation-sheet-title";
 
+  const cardClass = embedded
+    ? "rounded-[1.25rem] border border-slate-200/70 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
+    : "rounded-bl-[3rem] rounded-tr-3xl border border-slate-200 bg-white p-6 shadow-sm";
+
   return (
-    <div className="rounded-bl-[3rem] rounded-tr-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className={cardClass}>
       <h2 className="text-xl font-semibold text-slate-900">Donation History</h2>
       <p className="mt-1 text-sm text-slate-500">
         Approved donations and pending requests.

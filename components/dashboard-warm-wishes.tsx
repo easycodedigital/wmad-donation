@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FlashBanner } from "@/components/flash-banner";
+import { runBottomSheetEnter } from "@/lib/bottom-sheet";
 import { WarmWishesGrid, type WarmWishItem } from "@/components/warm-wishes-grid";
 
 const MAX = 280;
@@ -12,13 +13,20 @@ const QUICK_EMOJI = ["💛", "✨", "🌈", "🫶", "🙏", "❤️", "☀️", 
 type Props = {
   initialWishes: WarmWishItem[];
   currentUserId: number;
+  embedded?: boolean;
 };
 
 type WishSheetState = { mode: "edit"; id: number } | { mode: "delete"; id: number } | null;
 
-export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
+export function DashboardWarmWishes({
+  initialWishes,
+  currentUserId,
+  embedded = false,
+}: Props) {
   const router = useRouter();
-  const [wishes, setWishes] = useState(initialWishes);
+  const [wishes, setWishes] = useState(() =>
+    initialWishes.filter((w) => w.user.id === currentUserId),
+  );
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -29,24 +37,10 @@ export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
   const [sheetFormError, setSheetFormError] = useState("");
   const [editText, setEditText] = useState("");
 
-  useEffect(() => {
-    setWishes(initialWishes);
-  }, [initialWishes]);
+  const ownWishes = wishes.filter((w) => w.user.id === currentUserId);
 
   const sheetOpen = sheet !== null;
   const activeWish = sheet ? wishes.find((w) => w.id === sheet.id) ?? null : null;
-
-  useEffect(() => {
-    if (!sheetOpen) {
-      setSheetEntered(false);
-      return;
-    }
-    setSheetEntered(false);
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setSheetEntered(true));
-    });
-    return () => cancelAnimationFrame(id);
-  }, [sheetOpen, sheet?.mode, sheet?.id]);
 
   useEffect(() => {
     if (!sheetOpen) return;
@@ -66,6 +60,7 @@ export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
 
   const closeSheet = () => {
     if (sheetBusyId !== null) return;
+    setSheetEntered(false);
     setSheet(null);
     setSheetFormError("");
   };
@@ -74,11 +69,13 @@ export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
     setSheetFormError("");
     setEditText(wish.message);
     setSheet({ mode: "edit", id: wish.id });
+    runBottomSheetEnter(setSheetEntered);
   };
 
   const startDelete = (wish: WarmWishItem) => {
     setSheetFormError("");
     setSheet({ mode: "delete", id: wish.id });
+    runBottomSheetEnter(setSheetEntered);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,7 +100,9 @@ export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
       return;
     }
     const created = (await res.json()) as WarmWishItem;
-    setWishes((prev) => [created, ...prev].slice(0, 48));
+    if (created.user.id === currentUserId) {
+      setWishes((prev) => [created, ...prev].slice(0, 48));
+    }
     setText("");
     setMessage("Your message is live on the home page cheer wall—thank you!");
     router.refresh();
@@ -132,6 +131,7 @@ export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
     }
     const updated = (await res.json()) as WarmWishItem;
     setWishes((prev) => prev.map((w) => (w.id === editingId ? updated : w)));
+    setSheetEntered(false);
     setSheet(null);
     setSheetFormError("");
     setMessage("Post updated.");
@@ -151,15 +151,21 @@ export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
       return;
     }
     setWishes((prev) => prev.filter((w) => w.id !== deleteId));
+    setSheetEntered(false);
     setSheet(null);
     setSheetFormError("");
     setMessage("Post deleted.");
     router.refresh();
   };
 
+  const rootClass = embedded ? "" : "mx-auto w-full max-w-7xl px-6 pb-6";
+  const cardClass = embedded
+    ? "rounded-[1.25rem] border border-slate-200/70 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
+    : "rounded-bl-[2.75rem] rounded-tr-2xl border border-slate-200 bg-white p-6 shadow-sm";
+
   return (
-    <section className="mx-auto w-full max-w-7xl px-6 pb-6">
-      <article className="rounded-bl-[2.75rem] rounded-tr-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className={rootClass}>
+      <article className={cardClass}>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600">
           Cheer wall
         </p>
@@ -234,34 +240,35 @@ export function DashboardWarmWishes({ initialWishes, currentUserId }: Props) {
         </form>
 
         <div className="mt-8 border-t border-slate-100 pt-6">
-          <h3 className="text-sm font-semibold text-slate-900">Latest from members</h3>
-          <p className="mt-0.5 text-xs text-slate-500">Newest first — same feed as the home page.</p>
+          <h3 className="text-sm font-semibold text-slate-900">Your posts</h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Only your messages — they also appear on the public home page cheer wall.
+          </p>
           <div className="mt-4">
             <WarmWishesGrid
-              wishes={wishes}
+              wishes={ownWishes}
               highlightUserId={currentUserId}
-              renderActions={(wish, isOwn) =>
-                isOwn ? (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={sheetBusyId !== null}
-                      onClick={() => startEdit(wish)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={sheetBusyId !== null}
-                      onClick={() => startDelete(wish)}
-                      className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ) : null
-              }
+              emptyHint="You have not posted yet. Share a message above to appear on the cheer wall."
+              renderActions={(wish) => (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={sheetBusyId !== null}
+                    onClick={() => startEdit(wish)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    disabled={sheetBusyId !== null}
+                    onClick={() => startDelete(wish)}
+                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             />
           </div>
         </div>

@@ -5,7 +5,7 @@ import { FlashBanner } from "@/components/flash-banner";
 
 type PaymentType = "CASH" | "BANK_TRANSFER" | "ABA" | "ACLEDA" | "WING" | "OTHER";
 
-export function MemberDonationRequestForm() {
+export function MemberDonationRequestForm({ embedded = false }: { embedded?: boolean }) {
   const [amount, setAmount] = useState("");
   const [paymentType, setPaymentType] = useState<PaymentType>("BANK_TRANSFER");
   const [accountNumber, setAccountNumber] = useState("");
@@ -81,9 +81,14 @@ export function MemberDonationRequestForm() {
     window.location.reload();
   };
 
+  const rootClass = embedded ? "" : "mx-auto w-full max-w-7xl px-6 pb-6";
+  const cardClass = embedded
+    ? "rounded-[1.25rem] border border-slate-200/70 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
+    : "rounded-bl-[2.75rem] rounded-tr-2xl border border-slate-200 bg-white p-6 shadow-sm";
+
   return (
-    <section className="mx-auto w-full max-w-7xl px-6 pb-6">
-      <article className="rounded-bl-[2.75rem] rounded-tr-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className={rootClass}>
+      <article className={cardClass}>
         <h2 className="text-lg font-semibold text-slate-900">Add Donation Request</h2>
         <p className="mt-1 text-sm text-slate-500">
           Submit your donation and admin will approve it before it appears in your history.

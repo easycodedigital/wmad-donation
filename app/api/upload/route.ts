@@ -1,5 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { saveUploadedFile } from "@/lib/uploaded-files";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -23,16 +22,16 @@ export async function POST(req: Request) {
     return Response.json({ error: "File too large (max 5MB)." }, { status: 400 });
   }
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-
   const ext = file.name.includes(".") ? file.name.split(".").pop() : "png";
   const safeExt = (ext ?? "png").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "png";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
-  const filePath = path.join(uploadsDir, filename);
-
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filePath, buffer);
 
-  return Response.json({ url: `/uploads/${filename}` });
+  try {
+    const saved = await saveUploadedFile(filename, file.type, buffer);
+    return Response.json(saved);
+  } catch (error) {
+    console.error("Upload save failed:", error);
+    return Response.json({ error: "Could not save uploaded image." }, { status: 500 });
+  }
 }

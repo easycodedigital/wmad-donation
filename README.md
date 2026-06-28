@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Database setup
+
+PostgreSQL + Prisma. Before running the app:
+
+1. Copy `.env.example` to `.env.local` and set `DATABASE_URL` and `JWT_SECRET`.
+2. Apply migrations: `npm run db:migrate:deploy`
+3. Create an admin: `npm run admin:create -- you@example.com password "Your Name"`
+
+Full guide: [docs/database-setup.md](docs/database-setup.md). Production env vars: [docs/vercel-environment-variables.md](docs/vercel-environment-variables.md).
+
 ## Getting Started
 
 First, run the development server:

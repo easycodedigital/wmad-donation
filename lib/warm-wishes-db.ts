@@ -16,6 +16,7 @@ export type WarmWishWithUser = {
 type WarmWishDelegate = {
   findMany(opts: {
     take?: number;
+    where?: { userId: number };
     orderBy: { createdAt: "desc" | "asc" };
     include: {
       user: { select: { id: true; name: true; major: true; profileImage: true } };
@@ -64,6 +65,29 @@ function isWarmWishTableMissing(error: unknown): boolean {
 export async function findWarmWishesForFeed(take = 48): Promise<WarmWishWithUser[]> {
   try {
     return await getWarmWishDelegate().findMany({
+      take,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: { id: true, name: true, major: true, profileImage: true },
+        },
+      },
+    });
+  } catch (error) {
+    if (isWarmWishTableMissing(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function findWarmWishesForUser(
+  userId: number,
+  take = 48,
+): Promise<WarmWishWithUser[]> {
+  try {
+    return await getWarmWishDelegate().findMany({
+      where: { userId },
       take,
       orderBy: { createdAt: "desc" },
       include: {

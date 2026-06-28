@@ -10,7 +10,7 @@ export type WarmWishItem = {
   };
 };
 
-function formatTime(iso: string) {
+export function formatWarmWishTime(iso: string) {
   const d = new Date(iso);
   const now = Date.now();
   const diff = now - d.getTime();
@@ -80,7 +80,7 @@ export function WarmWishesGrid({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900">{w.user.name}</p>
                 <p className="text-xs text-slate-500">{w.user.major ?? "Member"}</p>
-                <p className="text-xs text-slate-400">{formatTime(w.createdAt)}</p>
+                <p className="text-xs text-slate-400">{formatWarmWishTime(w.createdAt)}</p>
               </div>
             </div>
             <p className="mt-4 break-words text-base leading-relaxed text-slate-700">

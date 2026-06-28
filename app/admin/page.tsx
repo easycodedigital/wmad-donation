@@ -2,10 +2,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { AdminWorkspace } from "@/components/admin-workspace";
-import { BackToHomeLink } from "@/components/back-to-home-link";
-import { LogoutButton } from "@/components/logout-button";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { findCommunityPostsForFeed, serializeCommunityPost } from "@/lib/community-posts-db";
 
 async function loadProfileImagesByUserIds(ids: number[]) {
   const unique = [...new Set(ids.filter((id) => Number.isFinite(id)))];
@@ -35,6 +34,11 @@ export default async function AdminPage() {
   if (payload.role !== "ADMIN") {
     redirect("/dashboard");
   }
+
+  const adminUser = await prisma.user.findUnique({
+    where: { id: payload.id },
+    select: { id: true, name: true, email: true, major: true, profileImage: true },
+  });
 
   const memberManagementListRaw = await prisma.user.findMany({
     where: { role: "MEMBER" },
@@ -92,22 +96,17 @@ export default async function AdminPage() {
     },
   }));
 
+  const communityPostsRaw = await findCommunityPostsForFeed(48);
+  const communityPosts = communityPostsRaw.map(serializeCommunityPost);
+
   return (
-    <main className="min-h-screen bg-white">
-      <section className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-6">
-        <div>
-          <p className="text-sm text-slate-500">Admin Portal</p>
-          <h1 className="text-2xl font-bold text-slate-900">Donation Management</h1>
-          <p className="text-sm text-slate-600">
-            Review donation requests, record entries, and manage members.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <BackToHomeLink />
-          <LogoutButton />
-        </div>
-      </section>
+    <main className="h-screen w-full max-w-full overflow-hidden bg-[#f4f6f8]">
       <AdminWorkspace
+        adminId={adminUser?.id ?? payload.id}
+        adminName={adminUser?.name ?? "Admin"}
+        adminEmail={adminUser?.email ?? ""}
+        adminMajor={adminUser?.major ?? null}
+        adminProfileImage={adminUser?.profileImage ?? null}
         allDonations={allDonations}
         memberManagementList={memberManagementListRaw.map((m) => ({
           id: m.id,
@@ -119,6 +118,7 @@ export default async function AdminPage() {
           createdAt: m.createdAt.toISOString(),
         }))}
         memberUsers={memberUsers}
+        communityPosts={communityPosts}
       />
     </main>
   );

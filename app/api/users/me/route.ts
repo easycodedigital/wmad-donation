@@ -17,9 +17,9 @@ export async function PATCH(req: Request) {
 
   const me = await prisma.user.findUnique({
     where: { id: payload.id },
-    select: { status: true },
+    select: { status: true, role: true },
   });
-  if (!me || me.status !== "APPROVED") {
+  if (!me || (me.role !== "ADMIN" && me.status !== "APPROVED")) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -55,6 +55,40 @@ export async function PATCH(req: Request) {
       profileImage: true,
     },
   });
+
+  return Response.json(user);
+}
+
+export async function GET(req: Request) {
+  const token = getTokenFromCookieHeader(req.headers.get("cookie"));
+
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let payload;
+  try {
+    payload = verifyToken(token);
+  } catch {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      major: true,
+      profileImage: true,
+      status: true,
+      role: true,
+    },
+  });
+
+  if (!user || (user.role !== "ADMIN" && user.status !== "APPROVED")) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   return Response.json(user);
 }

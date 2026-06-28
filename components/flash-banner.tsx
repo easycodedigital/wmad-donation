@@ -13,7 +13,10 @@ type FlashBannerProps = {
 
 export function FlashBanner({ variant, children, onDismiss, className = "" }: FlashBannerProps) {
   const dismissRef = useRef(onDismiss);
-  dismissRef.current = onDismiss;
+
+  useEffect(() => {
+    dismissRef.current = onDismiss;
+  }, [onDismiss]);
 
   useEffect(() => {
     const id = window.setTimeout(() => dismissRef.current(), AUTO_DISMISS_MS);

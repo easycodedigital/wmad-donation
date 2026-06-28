@@ -4,8 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { BackToHomeLink } from "@/components/back-to-home-link";
 import { FlashBanner } from "@/components/flash-banner";
+import { useTranslation } from "@/components/language-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function RegisterPage() {
+  const t = useTranslation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,13 +37,13 @@ export default function RegisterPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data?.error ?? "Image upload failed.");
+      setError(data?.error ?? t.auth.register.imageUploadError);
       return;
     }
 
     const data = await res.json();
     setProfileImageUrl(data.url);
-    setImageHint("Photo saved — it will be sent when you submit the form.");
+    setImageHint(t.auth.register.imageSaved);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -65,7 +68,7 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data?.error ?? "Registration failed.");
+      setError(data?.error ?? t.auth.register.error);
       return;
     }
 
@@ -77,23 +80,23 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white px-6 py-10">
+    <main className="relative flex min-h-screen w-full max-w-full items-center justify-center overflow-x-hidden bg-white px-6 py-10">
+      <div className="absolute right-4 top-4 z-10 md:right-6 md:top-6">
+        <LanguageSwitcher scrolled />
+      </div>
       <div className="w-full max-w-md rounded-bl-[2.75rem] rounded-tr-2xl border border-neutral-100 bg-white p-6 shadow-sm">
         <div className="mb-5">
           <BackToHomeLink variant="text" />
         </div>
-        <p className="text-sm font-medium text-emerald-700">New donor</p>
-        <h1 className="mt-1 text-2xl font-bold text-gray-900">Create your account</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Register as a member and you&apos;ll be signed in automatically to view and manage your
-          donations on your dashboard.
-        </p>
+        <p className="text-sm font-medium text-emerald-700">{t.auth.register.eyebrow}</p>
+        <h1 className="mt-1 text-2xl font-bold text-gray-900">{t.auth.register.title}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t.auth.register.description}</p>
 
         <form className="mt-5 space-y-3" onSubmit={handleRegister}>
           <input
             className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-neutral-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
             type="text"
-            placeholder="Full name"
+            placeholder={t.auth.register.name}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -102,7 +105,7 @@ export default function RegisterPage() {
           <input
             className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-neutral-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
             type="email"
-            placeholder="Email"
+            placeholder={t.auth.register.email}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -111,7 +114,7 @@ export default function RegisterPage() {
           <input
             className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-neutral-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
             type="password"
-            placeholder="Password"
+            placeholder={t.auth.register.password}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -121,7 +124,7 @@ export default function RegisterPage() {
           <input
             className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-neutral-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
             type="text"
-            placeholder="Major / field of study (optional)"
+            placeholder={t.auth.register.major}
             value={major}
             onChange={(e) => setMajor(e.target.value)}
             autoComplete="organization-title"
@@ -129,12 +132,12 @@ export default function RegisterPage() {
           <input
             className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
             type="text"
-            placeholder="Profile image URL (optional)"
+            placeholder={t.auth.register.profileUrl}
             value={profileImageUrl}
             onChange={(e) => setProfileImageUrl(e.target.value)}
           />
           <div className="space-y-1">
-            <label className="block text-sm text-gray-600">Or upload profile photo</label>
+            <label className="block text-sm text-gray-600">{t.auth.register.uploadLabel}</label>
             <input
               type="file"
               accept="image/*"
@@ -142,7 +145,7 @@ export default function RegisterPage() {
               className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-emerald-800"
             />
             {uploadingImage ? (
-              <p className="text-xs text-gray-500">Uploading...</p>
+              <p className="text-xs text-gray-500">{t.auth.register.uploading}</p>
             ) : null}
             {imageHint ? (
               <p className="text-xs font-medium text-emerald-700">{imageHint}</p>
@@ -154,7 +157,7 @@ export default function RegisterPage() {
             className="w-full rounded-bl-xl rounded-tr-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 disabled:opacity-60"
             disabled={loading}
           >
-            {loading ? "Creating account..." : "Register"}
+            {loading ? t.auth.register.submitting : t.auth.register.submit}
           </button>
         </form>
 
@@ -168,12 +171,12 @@ export default function RegisterPage() {
           </FlashBanner>
         ) : null}
         <p className="mt-4 text-center text-sm text-neutral-600">
-          Already have an account?{" "}
+          {t.auth.register.hasAccount}{" "}
           <Link
             href="/login"
             className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
           >
-            Log in
+            {t.auth.register.login}
           </Link>
         </p>
       </div>
